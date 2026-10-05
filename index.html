@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171923">
+<title>Universal TRPG Tool</title>
+<style>
+:root{--bg:#f3f4f6;--card:#fff;--text:#171923;--muted:#6b7280;--line:#e5e7eb;--primary:#4f46e5;--danger:#dc2626;--ok:#059669;--radius:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}button{border:0;border-radius:10px;padding:9px 12px;background:#e5e7eb;color:var(--text);cursor:pointer}
+button.primary{background:var(--primary);color:white}button.danger{background:#fee2e2;color:#991b1b}button.ok{background:#d1fae5;color:#065f46}button.small{padding:6px 9px;font-size:13px}
+button:active{transform:translateY(1px)}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;background:white;color:var(--text)}
+textarea{min-height:90px;resize:vertical}.app{max-width:1100px;margin:auto;padding-bottom:70px}
+header{position:sticky;top:0;z-index:10;background:rgba(243,244,246,.94);backdrop-filter:blur(14px);padding:12px 14px 8px;border-bottom:1px solid var(--line)}
+.header{display:flex;align-items:center;gap:7px}.header h1{font-size:20px;margin:0;flex:1}.tabs{display:flex;gap:6px;overflow:auto;margin-top:10px}.tab{white-space:nowrap;background:transparent;color:var(--muted)}.tab.active{background:var(--primary);color:#fff}
+main{padding:14px}.page{display:none}.page.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 3px 15px rgba(0,0,0,.06)}
+h2,h3{margin:0 0 12px}.grid{display:grid;gap:10px}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:650px){.grid2,.grid3{grid-template-columns:1fr 1fr}.grid2.one-mobile{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}.row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.between{justify-content:space-between}.muted{font-size:13px;color:var(--muted)}
+.list{display:grid;gap:8px}.item{border:1px solid var(--line);border-radius:12px;padding:11px;background:#fff}.item-row{display:flex;gap:8px;align-items:center}.item-row>*:first-child{flex:1}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}.pill{display:inline-flex;padding:4px 8px;border-radius:999px;background:#f3f4f6;font-size:12px}
+.statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{border:1px solid var(--line);border-radius:12px;padding:10px}.statname{font-weight:700;margin-bottom:6px}.statval{font-size:20px;font-weight:700}
+.resource{border:1px solid var(--line);border-radius:12px;padding:11px}.bar{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:8px 0}.fill{height:100%;background:var(--primary);border-radius:99px}.hp .fill{background:#ef4444}.mp .fill{background:#3b82f6}
+.role-player{border-left:4px solid #4f46e5}.role-ally{border-left:4px solid #059669}.role-enemy{border-left:4px solid #dc2626}.role-neutral{border-left:4px solid #6b7280}
+.avatar{width:110px;height:110px;border-radius:16px;object-fit:cover;background:#e5e7eb;border:1px solid var(--line)}.avatarph{display:flex;align-items:center;justify-content:center;font-size:42px}
+.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}.modalbg.show{display:flex}.modal{background:#fff;width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px}.modalhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.log{max-height:300px;overflow:auto}.hidden{display:none!important}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#171923;color:white;padding:10px 14px;border-radius:12px;display:none;z-index:100}.toast.show{display:block}
+.notice{background:#eef2ff;border-radius:12px;padding:11px;font-size:13px;color:#3730a3}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="header">
+    <h1>🎲 Universal TRPG Tool</h1>
+    <button class="small" onclick="undo()">↩ Undo</button>
+    <button class="small" onclick="redo()">Redo ↪</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="campaign">🏕 캠페인</button>
+    <button class="tab" data-tab="character">👤 캐릭터</button>
+    <button class="tab" data-tab="inventory">🎒 인벤토리</button>
+    <button class="tab" data-tab="skills">📖 스킬</button>
+    <button class="tab" data-tab="dice">🎲 주사위</button>
+    <button class="tab" data-tab="events">📜 이벤트</button>
+    <button class="tab" data-tab="settings">⚙ 설정</button>
+  </div>
+</header>
+
+<main>
+<section id="page-campaign" class="page active">
+  <div class="card">
+    <div class="row between">
+      <div><h2 id="campaignTitle">새 캠페인</h2><div class="muted" id="campaignPreview">진행도 없음</div></div>
+      <div class="row"><button class="primary" onclick="newCampaign()">＋ 새 캠페인</button><button onclick="campaignManager()">캠페인 관리</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📌 현재 진행</h2>
+    <div class="grid grid2">
+      <div><label>캠페인 제목</label><input id="campaignName"></div>
+      <div><label>진행도</label><input id="campaignProgress" placeholder="예: 북쪽 폐허 조사 중"></div>
+    </div>
+    <label style="margin-top:10px">현재 상황</label><textarea id="campaignSituation" placeholder="현재 장면, 중요한 정보, GM 메모"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" onclick="saveCampaignMeta()">저장</button>
+      <button onclick="copyAIState()">📋 AI용 상태 복사</button>
+      <button onclick="copyFullCampaign()">📋 전체 JSON 복사</button>
+      <button class="danger" onclick="resetCampaign()">🔄 처음부터</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>👥 캐릭터</h2>
+    <div class="row" style="margin-bottom:10px">
+      <button class="primary" onclick="addCharacter('player')">＋ 플레이어</button>
+      <button class="ok" onclick="addCharacter('ally')">＋ 아군</button>
+      <button class="danger" onclick="addCharacter('enemy')">＋ 적</button>
+      <button onclick="addCharacter('neutral')">＋ 중립</button>
+    </div>
+    <div class="notice">플레이어·동료·적을 별도 데이터로 고정하지 않고 하나의 캐릭터 목록으로 관리합니다. 같은 캐릭터를 상황에 따라 소속만 바꿀 수도 있습니다.</div>
+    <div id="characterGroups" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2>📝 최근 로그</h2><div id="recentLogs" class="log"></div></div>
+</section>
+
+<section id="page-character" class="page"><div id="characterDetail"></div></section>
+<section id="page-inventory" class="page"><div id="inventoryPage"></div></section>
+<section id="page-skills" class="page"><div id="skillsPage"></div></section>
+
+<section id="page-dice" class="page">
+  <div class="card">
+    <h2>🎲 주사위</h2>
+    <div class="grid grid3">
+      <div><label>주사위 수</label><input id="diceCount" type="number" min="1" value="1"></div>
+      <div><label>면 수</label><input id="diceSides" type="number" min="2" value="20"></div>
+      <div><label>연산</label><select id="diceMode"><option value="sum">합계</option><option value="highest">최고 1개</option><option value="lowest">최저 1개</option><option value="keepHigh">높은 K개 합</option><option value="keepLow">낮은 K개 합</option></select></div>
+    </div>
+    <div id="keepRow" class="hidden" style="margin-top:10px"><label>K</label><input id="diceKeep" type="number" min="1" value="1"></div>
+    <button class="primary" style="width:100%;margin-top:12px;font-size:17px" onclick="rollDice()">🎲 굴리기</button>
+    <div id="diceResult" style="font-size:30px;font-weight:800;text-align:center;padding:12px">-</div>
+    <div id="diceBreakdown" class="muted" style="text-align:center"></div>
+  </div>
+  <div class="card"><h2>📜 주사위 기록</h2><div id="diceLog" class="log"></div></div>
+</section>
+
+<section id="page-events" class="page">
+  <div class="card"><div class="row between"><h2>📜 이벤트</h2><button class="primary" onclick="openEventEditor()">＋ 이벤트</button></div><div id="eventList"></div></div>
+</section>
+<section id="page-settings" class="page"><div id="settingsPage"></div></section>
+</main>
+</div>
+
+<div id="modalbg" class="modalbg" onclick="if(event.target===this)closeModal()"><div id="modal" class="modal"></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY='universal_trpg_tool_v1';
+let db=loadDB(), currentCampaignId=db.currentCampaignId, selectedCharacterId=null, historyStack=[], redoStack=[], currentTab='campaign';
+
+function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2))}
+function copy(x){return JSON.parse(JSON.stringify(x))}
+function rulesDefault(){return{statPointsPerLevel:2,statAllocation:'manual',allowRedistribution:true,modifierRule:'dnd',weightEnabled:true,carryingCapacityRule:'strength',hpInitial:100,hpPerLevel:10,mpEnabled:true,mpInitial:30,mpPerLevel:5}}
+function statsDefault(){return['힘','민첩','지능','매력','체력','지혜'].map(n=>({id:uid(),name:n,value:10}))}
+function makeCharacter(role='neutral'){
+  const r=rulesDefault();
+  return{id:uid(),name:'새 캐릭터',role,isCurrentPlayer:false,image:'',playerName:'',race:'',job:'',level:1,exp:0,
+    stats:statsDefault(),specialStats:[],resources:[
+      {id:uid(),name:'HP',current:r.hpInitial,max:r.hpInitial,type:'hp',perLevel:r.hpPerLevel,enabled:true},
+      {id:uid(),name:'MP',current:r.mpEnabled?r.mpInitial:0,max:r.mpEnabled?r.mpInitial:0,type:'mp',perLevel:r.mpPerLevel,enabled:r.mpEnabled}
+    ],inventory:[],currency:[{id:uid(),name:'Gold',amount:0}],skills:[],combatStats:[],statuses:[],notes:'',story:''}
+}
+function makeCampaign(){return{id:uid(),name:'새 캠페인',progress:'',situation:'',createdAt:Date.now(),rules:rulesDefault(),characters:[],events:[],logs:[],diceLogs:[]}}
+function loadDB(){try{const x=JSON.parse(localStorage.getItem(KEY)||'');if(x?.campaigns?.length)return x}catch(e){}const c=makeCampaign();return{campaigns:[c],currentCampaignId:c.id}}
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db))}
+function C(){return db.campaigns.find(c=>c.id===currentCampaignId)||db.campaigns[0]}
+function pushHistory(){historyStack.push(copy(db));if(historyStack.length>60)historyStack.shift();redoStack=[]}
+function mutate(fn,log){pushHistory();fn();if(log)addLog(log,false);saveDB();render()}
+function addLog(text,save=true){const c=C();c.logs.unshift({id:uid(),time:new Date().toLocaleString('ko-KR'),text});c.logs=c.logs.slice(0,200);if(save)saveDB()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function mod(v){return Math.floor((Number(v)-10)/2)}
+function roleName(r){return{player:'플레이어',ally:'아군',enemy:'적',neutral:'중립'}[r]||r}
+function char(id){return C().characters.find(x=>x.id===id)}
+function item(ch,id){return ch.inventory.find(x=>x.id===id)}
+function skill(ch,id){return ch.skills.find(x=>x.id===id)}
+function toast(s){const e=document.getElementById('toast');e.textContent=s;e.classList.add('show');clearTimeout(window.tt);window.tt=setTimeout(()=>e.classList.remove('show'),1600)}
+function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('modalbg').classList.add('show')}
+function closeModal(){document.getElementById('modalbg').classList.remove('show')}
+function undo(){if(!historyStack.length)return toast('Undo할 기록이 없습니다.');redoStack.push(copy(db));db=historyStack.pop();currentCampaignId=db.currentCampaignId;saveDB();render();toast('Undo')}
+function redo(){if(!redoStack.length)return toast('Redo할 기록이 없습니다.');historyStack.push(copy(db));db=redoStack.pop();currentCampaignId=db.currentCampaignId;saveDB();render();toast('Redo')}
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{currentTab=b.dataset.tab;syncTabs();render()});
+function syncTabs(){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+currentTab))}
+
+function render(){
+  const c=C();if(!c)return;
+  document.getElementById('campaignTitle').textContent=c.name||'새 캠페인';
+  document.getElementById('campaignPreview').textContent=c.progress||'진행도 없음';
+  document.getElementById('campaignName').value=c.name||'';document.getElementById('campaignProgress').value=c.progress||'';document.getElementById('campaignSituation').value=c.situation||'';
+  renderCharacters();renderLogs();renderCharacter();renderInventory();renderSkills();renderDiceLog();renderEvents();renderSettings()
+}
+function renderCharacters(){
+  const groups=['player','ally','enemy','neutral'],box=document.getElementById('characterGroups');
+  box.innerHTML=groups.map(role=>{const a=C().characters.filter(x=>x.role===role);return`<div style="margin-bottom:14px"><div class="row between"><h3>${roleName(role)}</h3><button class="small" onclick="addCharacter('${role}')">＋</button></div>${a.length?`<div class="list">${a.map(characterCard).join('')}</div>`:'<div class="empty">없음</div>'}</div>`}).join('')
+}
+function characterCard(ch){return`<div class="item role-${ch.role}"><div class="item-row">${ch.image?`<img src="${ch.image}" class="avatar" style="width:54px;height:54px;border-radius:10px">`:`<div class="avatar avatarph" style="width:54px;height:54px;font-size:24px">👤</div>`}<div><b>${esc(ch.name)}</b><div class="muted">Lv.${ch.level} · ${roleName(ch.role)}${ch.isCurrentPlayer?' · ⭐ 현재':''}</div></div><button class="small" onclick="selectCharacter('${ch.id}')">상세</button><button class="small" onclick="editCharacter('${ch.id}')">편집</button><button class="small danger" onclick="deleteCharacter('${ch.id}')">삭제</button></div><div class="row" style="margin-top:8px">${ch.resources.filter(r=>r.enabled!==false).map(r=>`<span class="pill">${esc(r.name)} ${r.current}/${r.max}</span>`).join('')}</div></div>`}
+function addCharacter(role){mutate(()=>{const ch=makeCharacter(role);if(role==='player'&&!C().characters.some(x=>x.isCurrentPlayer))ch.isCurrentPlayer=true;C().characters.push(ch);selectedCharacterId=ch.id},'캐릭터 추가');currentTab='character';syncTabs();render()}
+function deleteCharacter(id){const ch=char(id);if(!ch||!confirm(`"${ch.name}"을 삭제할까요?`))return;mutate(()=>C().characters=C().characters.filter(x=>x.id!==id),`${ch.name} 삭제`);if(selectedCharacterId===id)selectedCharacterId=null}
+function selectCharacter(id){selectedCharacterId=id;currentTab='character';syncTabs();render()}
+
+function editCharacter(id){
+ const ch=char(id);if(!ch)return;
+ openModal(`<div class="modalhead"><h2>캐릭터 편집</h2><button onclick="closeModal()">✕</button></div>
+ <div class="grid grid2"><div><label>이름</label><input id="eName" value="${esc(ch.name)}"></div><div><label>소속</label><select id="eRole">${['player','ally','enemy','neutral'].map(r=>`<option value="${r}" ${ch.role===r?'selected':''}>${roleName(r)}</option>`).join('')}</select></div>
+ <div><label>플레이어</label><input id="ePlayer" value="${esc(ch.playerName)}"></div><div><label>종족</label><input id="eRace" value="${esc(ch.race)}"></div><div><label>직업/클래스</label><input id="eJob" value="${esc(ch.job)}"></div><div><label>레벨</label><input id="eLevel" type="number" min="1" value="${ch.level}"></div><div><label>EXP</label><input id="eExp" type="number" min="0" value="${ch.exp}"></div></div>
+ <label style="margin-top:10px">이미지</label><input id="eImage" type="file" accept="image/*">
+ <label style="margin-top:10px">스토리/진행</label><textarea id="eStory">${esc(ch.story)}</textarea><label style="margin-top:10px">메모</label><textarea id="eNotes">${esc(ch.notes)}</textarea>
+ <div class="row" style="margin-top:10px"><button class="primary" onclick="saveCharacterEdit('${id}')">저장</button><button onclick="closeModal()">취소</button></div>`)
+}
+function saveCharacterEdit(id){
+ const ch=char(id),file=document.getElementById('eImage').files[0];
+ const apply=image=>mutate(()=>{ch.name=document.getElementById('eName').value.trim()||'이름 없음';ch.role=document.getElementById('eRole').value;ch.playerName=document.getElementById('ePlayer').value;ch.race=document.getElementById('eRace').value;ch.job=document.getElementById('eJob').value;ch.level=Math.max(1,Number(document.getElementById('eLevel').value)||1);ch.exp=Math.max(0,Number(document.getElementById('eExp').value)||0);ch.story=document.getElementById('eStory').value;ch.notes=document.getElementById('eNotes').value;if(image!==undefined)ch.image=image;if(ch.role==='player')C().characters.forEach(x=>x.isCurrentPlayer=x.id===id)},'캐릭터 수정');
+ if(file){const r=new FileReader();r.onload=()=>{apply(r.result);closeModal()};r.readAsDataURL(file)}else{apply(undefined);closeModal()}
+}
+function renderCharacter(){
+ const box=document.getElementById('characterDetail'),ch=char(selectedCharacterId);
+ if(!ch){box.innerHTML='<div class="card"><div class="empty">캠페인에서 캐릭터를 선택하세요.</div></div>';return}
+ box.innerHTML=`<div class="card"><div class="row between"><h2>👤 ${esc(ch.name)}</h2><div class="row"><button onclick="editCharacter('${ch.id}')">편집</button><button onclick="changeRole('${ch.id}')">소속</button><button class="danger" onclick="deleteCharacter('${ch.id}')">삭제</button></div></div><div class="row">${ch.image?`<img class="avatar" src="${ch.image}">`:`<div class="avatar avatarph">👤</div>`}<div><div style="font-size:22px;font-weight:800">Lv.${ch.level}</div><div class="muted">${roleName(ch.role)}${ch.isCurrentPlayer?' · ⭐ 현재 플레이어':''}</div><div>EXP ${ch.exp}</div></div></div></div>
+ <div class="card"><h2>❤️ 자원</h2><div class="grid grid2">${ch.resources.map(resourceHTML).join('')}</div><button style="margin-top:10px" onclick="addResource('${ch.id}')">＋ 자원</button></div>
+ <div class="card"><div class="row between"><h2>📊 능력치</h2><button onclick="addStat('${ch.id}')">＋ 능력치</button></div><div class="statgrid">${ch.stats.map(s=>`<div class="stat"><div class="statname">${esc(s.name)}</div><div class="row"><button class="small" onclick="changeStat('${ch.id}','${s.id}',-1)">−</button><span class="statval">${s.value}</span><button class="small" onclick="changeStat('${ch.id}','${s.id}',1)">+</button><input style="max-width:75px" type="number" value="${s.value}" onchange="setStat('${ch.id}','${s.id}',this.value)"></div><div class="muted">보정 ${mod(s.value)>=0?'+':''}${mod(s.value)}</div><button class="small danger" style="margin-top:6px" onclick="deleteStat('${ch.id}','${s.id}')">삭제</button></div>`).join('')}</div></div>
+ <div class="card"><div class="row between"><h2>✨ 특수 능력치</h2><button onclick="addSpecial('${ch.id}')">＋ 추가</button></div><div class="list">${ch.specialStats.length?ch.specialStats.map(s=>`<div class="item item-row"><b>${esc(s.name)}</b><input style="max-width:100px" type="number" value="${s.value}" onchange="setSpecial('${ch.id}','${s.id}',this.value)"><button class="small danger" onclick="delSpecial('${ch.id}','${s.id}')">삭제</button></div>`).join(''):'<div class="empty">없음</div>'}</div></div>
+ <div class="card"><div class="row between"><h2>⚔ 전투 능력치</h2><button onclick="addCombat('${ch.id}')">＋ 추가</button></div><div class="list">${ch.combatStats.length?ch.combatStats.map(s=>`<div class="item item-row"><b>${esc(s.name)}</b><input style="max-width:100px" type="number" value="${s.value}" onchange="setCombat('${ch.id}','${s.id}',this.value)"><button class="small danger" onclick="delCombat('${ch.id}','${s.id}')">삭제</button></div>`).join(''):'<div class="empty">없음</div>'}</div></div>
+ <div class="card"><div class="row between"><h2>🔥 상태</h2><button onclick="addStatus('${ch.id}')">＋ 상태</button></div><div class="list">${ch.statuses.length?ch.statuses.map(s=>`<div class="item"><div class="row between"><b>${esc(s.name)}</b><button class="small danger" onclick="delStatus('${ch.id}','${s.id}')">삭제</button></div><div>${esc(s.description)}</div><div class="muted">수치: ${esc(s.value)} · 지속: ${esc(s.duration)}</div></div>`).join(''):'<div class="empty">없음</div>'}</div></div>
+ <div class="card"><h2>📝 메모</h2><textarea onchange="setCharField('${ch.id}','notes',this.value)">${esc(ch.notes)}</textarea></div>`
+}
+function resourceHTML(r){const p=r.max?Math.max(0,Math.min(100,100*r.current/r.max)):0;return`<div class="resource ${r.type||''}"><div class="row between"><b>${esc(r.name)}</b><span>${r.current}/${r.max}</span></div><div class="bar"><div class="fill" style="width:${p}%"></div></div><div class="row"><button class="small" onclick="changeResource('${selectedCharacterId}','${r.id}',-10)">−10</button><button class="small" onclick="changeResource('${selectedCharacterId}','${r.id}',-1)">−1</button><input style="max-width:90px" type="number" value="${r.current}" onchange="setResource('${selectedCharacterId}','${r.id}',this.value)"><button class="small" onclick="changeResource('${selectedCharacterId}','${r.id}',1)">+1</button><button class="small" onclick="changeResource('${selectedCharacterId}','${r.id}',10)">+10</button><button class="small danger" onclick="deleteResource('${selectedCharacterId}','${r.id}')">삭제</button></div></div>`}
+function changeResource(cid,rid,d){mutate(()=>{const r=char(cid).resources.find(x=>x.id===rid);r.current=Math.max(0,Math.min(r.max,r.current+d))},'자원 변경')}
+function setResource(cid,rid,v){mutate(()=>{const r=char(cid).resources.find(x=>x.id===rid);r.current=Math.max(0,Math.min(r.max,Number(v)||0))},'자원 변경')}
+function deleteResource(cid,rid){mutate(()=>char(cid).resources=char(cid).resources.filter(x=>x.id!==rid),'자원 삭제')}
+function addResource(cid){openModal(`<div class="modalhead"><h2>자원 추가</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="rn" placeholder="SP, 정신력, 탄약 등"><div class="grid grid2" style="margin-top:10px"><div><label>최대값</label><input id="rm" type="number" value="10"></div><div><label>레벨당 증가</label><input id="rp" type="number" value="0"></div></div><button class="primary" style="margin-top:10px" onclick="saveResource('${cid}')">추가</button>`)}
+function saveResource(cid){const n=document.getElementById('rn').value.trim()||'자원',m=Number(document.getElementById('rm').value)||0,p=Number(document.getElementById('rp').value)||0;mutate(()=>char(cid).resources.push({id:uid(),name:n,current:m,max:m,type:'custom',perLevel:p,enabled:true}),`${n} 추가`);closeModal()}
+function addStat(cid){openModal(`<div class="modalhead"><h2>능력치 추가</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="sn" placeholder="운, 마력 등"><label style="margin-top:10px">초기값</label><input id="sv" type="number" value="10"><button class="primary" style="margin-top:10px" onclick="saveStat('${cid}')">추가</button>`)}
+function saveStat(cid){const n=document.getElementById('sn').value.trim()||'능력치',v=Number(document.getElementById('sv').value)||0;mutate(()=>char(cid).stats.push({id:uid(),name:n,value:v}),`${n} 추가`);closeModal()}
+function changeStat(cid,sid,d){mutate(()=>char(cid).stats.find(x=>x.id===sid).value+=d,'능력치 변경')}
+function setStat(cid,sid,v){mutate(()=>char(cid).stats.find(x=>x.id===sid).value=Number(v)||0,'능력치 변경')}
+function deleteStat(cid,sid){if(confirm('삭제할까요?'))mutate(()=>char(cid).stats=char(cid).stats.filter(x=>x.id!==sid),'능력치 삭제')}
+function addSpecial(cid){openModal(`<div class="modalhead"><h2>특수 능력치</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="spn" placeholder="명성, 신앙, 호감도"><label style="margin-top:10px">값</label><input id="spv" type="number" value="0"><button class="primary" style="margin-top:10px" onclick="saveSpecial('${cid}')">추가</button>`)}
+function saveSpecial(cid){const n=document.getElementById('spn').value.trim()||'특수 능력치',v=Number(document.getElementById('spv').value)||0;mutate(()=>char(cid).specialStats.push({id:uid(),name:n,value:v}),`${n} 추가`);closeModal()}
+function setSpecial(cid,sid,v){mutate(()=>char(cid).specialStats.find(x=>x.id===sid).value=Number(v)||0,'특수 능력치 변경')}
+function delSpecial(cid,sid){mutate(()=>char(cid).specialStats=char(cid).specialStats.filter(x=>x.id!==sid),'특수 능력치 삭제')}
+function addCombat(cid){openModal(`<div class="modalhead"><h2>전투 능력치</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="cn" placeholder="방어력, 회피 등"><label style="margin-top:10px">값</label><input id="cv" type="number" value="0"><button class="primary" style="margin-top:10px" onclick="saveCombat('${cid}')">추가</button>`)}
+function saveCombat(cid){const n=document.getElementById('cn').value.trim()||'전투 능력치',v=Number(document.getElementById('cv').value)||0;mutate(()=>char(cid).combatStats.push({id:uid(),name:n,value:v}),`${n} 추가`);closeModal()}
+function setCombat(cid,sid,v){mutate(()=>char(cid).combatStats.find(x=>x.id===sid).value=Number(v)||0,'전투 능력치 변경')}
+function delCombat(cid,sid){mutate(()=>char(cid).combatStats=char(cid).combatStats.filter(x=>x.id!==sid),'전투 능력치 삭제')}
+function addStatus(cid){openModal(`<div class="modalhead"><h2>상태 추가</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="stn"><label style="margin-top:10px">설명</label><textarea id="std"></textarea><div class="grid grid2"><div><label>수치</label><input id="stv"></div><div><label>지속</label><input id="stdur" placeholder="3턴 / 영구"></div></div><button class="primary" style="margin-top:10px" onclick="saveStatus('${cid}')">추가</button>`)}
+function saveStatus(cid){const n=document.getElementById('stn').value.trim()||'상태',d=document.getElementById('std').value,v=document.getElementById('stv').value,dur=document.getElementById('stdur').value;mutate(()=>char(cid).statuses.push({id:uid(),name:n,description:d,value:v,duration:dur}),`${n} 상태 추가`);closeModal()}
+function delStatus(cid,sid){mutate(()=>char(cid).statuses=char(cid).statuses.filter(x=>x.id!==sid),'상태 삭제')}
+function setCharField(cid,key,v){mutate(()=>char(cid)[key]=v,'캐릭터 정보 변경')}
+function changeRole(cid){const ch=char(cid);openModal(`<div class="modalhead"><h2>소속 변경</h2><button onclick="closeModal()">✕</button></div><select id="role">${['player','ally','enemy','neutral'].map(r=>`<option value="${r}" ${ch.role===r?'selected':''}>${roleName(r)}</option>`).join('')}</select><button class="primary" style="margin-top:10px" onclick="saveRole('${cid}')">변경</button>`)}
+function saveRole(cid){const r=document.getElementById('role').value;mutate(()=>{char(cid).role=r;if(r==='player')C().characters.forEach(x=>x.isCurrentPlayer=x.id===cid)},'소속 변경');closeModal()}
+
+function renderInventory(){
+ const ch=char(selectedCharacterId),box=document.getElementById('inventoryPage');
+ if(!ch){box.innerHTML='<div class="card"><div class="empty">캐릭터를 선택하세요.</div></div>';return}
+ const weight=ch.inventory.reduce((a,i)=>a+(Number(i.weight)||0)*(Number(i.quantity)||0),0),max=C().rules.weightEnabled?(C().rules.carryingCapacityRule==='strength'?(ch.stats.find(s=>s.name==='힘')?.value||10)*5:100):'∞';
+ box.innerHTML=`<div class="card"><div class="row between"><h2>🎒 ${esc(ch.name)}</h2><button class="primary" onclick="addItem('${ch.id}')">＋ 아이템</button></div><div class="row" style="margin-bottom:10px"><span class="pill">장비 ${ch.inventory.filter(i=>i.category==='equipment').length}</span><span class="pill">소비 ${ch.inventory.filter(i=>i.category==='consumable').length}</span><span class="pill">퀘스트 ${ch.inventory.filter(i=>i.category==='quest').length}</span><span class="pill">기타 ${ch.inventory.filter(i=>i.category==='misc').length}</span></div>${ch.inventory.length?`<div class="list">${ch.inventory.map(i=>`<div class="item"><div class="row between"><b>${esc(i.name)}</b><span class="pill">${esc(i.category)} ×${i.quantity}</span></div><div class="muted">${esc(i.description)} · 무게 ${i.weight}</div><div class="row" style="margin-top:7px">${i.category==='equipment'?`<button class="small ${i.equipped?'ok':''}" onclick="toggleEquip('${ch.id}','${i.id}')">${i.equipped?'장착 중':'장착'}</button>`:''}${i.category==='consumable'?`<button class="small" onclick="useItem('${ch.id}','${i.id}')">사용</button>`:''}<button class="small" onclick="editItem('${ch.id}','${i.id}')">편집</button><button class="small danger" onclick="deleteItem('${ch.id}','${i.id}')">버리기</button></div></div>`).join('')}</div>`:'<div class="empty">아이템 없음</div>'}</div>
+ <div class="card"><h2>⚖ 무게 / 💰 화폐</h2><div>현재 무게 <b>${weight}</b> / ${max}</div><hr><div class="list">${ch.currency.map(x=>`<div class="item item-row"><b>${esc(x.name)}</b><input style="max-width:120px" type="number" value="${x.amount}" onchange="setCurrency('${ch.id}','${x.id}',this.value)"><button class="small danger" onclick="deleteCurrency('${ch.id}','${x.id}')">삭제</button></div>`).join('')}</div><button style="margin-top:8px" onclick="addCurrency('${ch.id}')">＋ 화폐</button></div>`
+}
+function itemForm(i){return`<div class="grid grid2"><div><label>이름</label><input id="in" value="${esc(i.name)}"></div><div><label>분류</label><select id="ic">${['equipment','consumable','quest','misc'].map(x=>`<option value="${x}" ${i.category===x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>수량</label><input id="iq" type="number" min="1" value="${i.quantity}"></div><div><label>무게</label><input id="iw" type="number" min="0" step=".1" value="${i.weight}"></div><div><label>장비 슬롯</label><input id="is" value="${esc(i.slot)}"></div><div><label>효과</label><input id="ie" value="${esc((i.effects||[]).join(', '))}"></div></div><label style="margin-top:10px">설명</label><textarea id="id">${esc(i.description)}</textarea>`}
+function readItem(){return{name:document.getElementById('in').value.trim()||'아이템',category:document.getElementById('ic').value,quantity:Math.max(1,Number(document.getElementById('iq').value)||1),weight:Math.max(0,Number(document.getElementById('iw').value)||0),slot:document.getElementById('is').value,effects:document.getElementById('ie').value.split(',').map(x=>x.trim()).filter(Boolean),description:document.getElementById('id').value}}
+function addItem(cid){openModal(`<div class="modalhead"><h2>아이템 추가</h2><button onclick="closeModal()">✕</button></div>${itemForm({name:'새 아이템',category:'misc',quantity:1,weight:0,slot:'',effects:[],description:''})}<button class="primary" style="margin-top:10px" onclick="saveItem('${cid}')">추가</button>`)}
+function saveItem(cid){const v=readItem();mutate(()=>char(cid).inventory.push({id:uid(),...v,equipped:false}),`${v.name} 추가`);closeModal()}
+function editItem(cid,iid){const i=item(char(cid),iid);openModal(`<div class="modalhead"><h2>아이템 편집</h2><button onclick="closeModal()">✕</button></div>${itemForm(i)}<button class="primary" style="margin-top:10px" onclick="updateItem('${cid}','${iid}')">저장</button>`)}
+function updateItem(cid,iid){const v=readItem();mutate(()=>Object.assign(item(char(cid),iid),v),`${v.name} 수정`);closeModal()}
+function deleteItem(cid,iid){mutate(()=>char(cid).inventory=char(cid).inventory.filter(x=>x.id!==iid),'아이템 삭제')}
+function toggleEquip(cid,iid){const i=item(char(cid),iid);mutate(()=>i.equipped=!i.equipped,`${i.name} ${i.equipped?'해제':'장착'}`)}
+function useItem(cid,iid){const i=item(char(cid),iid);mutate(()=>{i.quantity--;if(i.quantity<=0)char(cid).inventory=char(cid).inventory.filter(x=>x.id!==iid)},`${i.name} 사용`)}
+function addCurrency(cid){openModal(`<div class="modalhead"><h2>화폐 추가</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="curN" value="Gold"><label style="margin-top:10px">수량</label><input id="curA" type="number" value="0"><button class="primary" style="margin-top:10px" onclick="saveCurrency('${cid}')">추가</button>`)}
+function saveCurrency(cid){const n=document.getElementById('curN').value.trim()||'화폐',a=Number(document.getElementById('curA').value)||0;mutate(()=>char(cid).currency.push({id:uid(),name:n,amount:a}),`${n} 추가`);closeModal()}
+function setCurrency(cid,id,v){mutate(()=>char(cid).currency.find(x=>x.id===id).amount=Number(v)||0,'화폐 변경')}
+function deleteCurrency(cid,id){mutate(()=>char(cid).currency=char(cid).currency.filter(x=>x.id!==id),'화폐 삭제')}
+
+function renderSkills(){
+ const ch=char(selectedCharacterId),box=document.getElementById('skillsPage');
+ if(!ch){box.innerHTML='<div class="card"><div class="empty">캐릭터를 선택하세요.</div></div>';return}
+ box.innerHTML=`<div class="card"><div class="row between"><h2>📖 ${esc(ch.name)}</h2><button class="primary" onclick="addSkill('${ch.id}')">＋ 스킬</button></div>${ch.skills.length?`<div class="list">${ch.skills.map(s=>`<div class="item"><div class="row between"><b>${esc(s.name)}</b><span class="pill">${esc(s.costName)} ${s.cost}</span></div><div>${esc(s.description)}</div><div class="muted">위력 ${esc(s.power)} · 명중 ${esc(s.accuracy)} · 공식 ${esc(s.formula||'-')}</div><div class="row" style="margin-top:7px"><button class="small primary" onclick="useSkill('${ch.id}','${s.id}')">사용</button><button class="small" onclick="editSkill('${ch.id}','${s.id}')">편집</button><button class="small danger" onclick="deleteSkill('${ch.id}','${s.id}')">삭제</button></div></div>`).join('')}</div>`:'<div class="empty">스킬 없음</div>'}</div>`
+}
+function skillForm(s){return`<div class="grid grid2"><div><label>이름</label><input id="skn" value="${esc(s.name)}"></div><div><label>자원 이름</label><input id="skcn" value="${esc(s.costName)}"></div><div><label>소모량</label><input id="skc" type="number" value="${s.cost}"></div><div><label>위력</label><input id="skp" value="${esc(s.power)}"></div><div><label>명중</label><input id="ska" value="${esc(s.accuracy)}"></div><div><label>주사위 공식</label><input id="skf" value="${esc(s.formula)}" placeholder="예: 2d6+힘"></div></div><label style="margin-top:10px">설명</label><textarea id="skd">${esc(s.description)}</textarea>`}
+function addSkill(cid){openModal(`<div class="modalhead"><h2>스킬 추가</h2><button onclick="closeModal()">✕</button></div>${skillForm({name:'새 스킬',costName:'MP',cost:0,power:'-',accuracy:'-',formula:'',description:''})}<button class="primary" style="margin-top:10px" onclick="saveSkill('${cid}')">추가</button>`)}
+function readSkill(){return{name:document.getElementById('skn').value.trim()||'스킬',costName:document.getElementById('skcn').value,cost:Number(document.getElementById('skc').value)||0,power:document.getElementById('skp').value,accuracy:document.getElementById('ska').value,formula:document.getElementById('skf').value,description:document.getElementById('skd').value}}
+function saveSkill(cid){const v=readSkill();mutate(()=>char(cid).skills.push({id:uid(),...v}),`${v.name} 습득`);closeModal()}
+function editSkill(cid,sid){openModal(`<div class="modalhead"><h2>스킬 편집</h2><button onclick="closeModal()">✕</button></div>${skillForm(skill(char(cid),sid))}<button class="primary" style="margin-top:10px" onclick="updateSkill('${cid}','${sid}')">저장</button>`)}
+function updateSkill(cid,sid){const v=readSkill();mutate(()=>Object.assign(skill(char(cid),sid),v),`${v.name} 수정`);closeModal()}
+function deleteSkill(cid,sid){mutate(()=>char(cid).skills=char(cid).skills.filter(x=>x.id!==sid),'스킬 삭제')}
+function useSkill(cid,sid){
+ const ch=char(cid),s=skill(ch,sid),r=ch.resources.find(x=>x.name===s.costName);
+ if(r&&r.current<s.cost)return toast('자원이 부족합니다.');
+ mutate(()=>{if(r)r.current-=s.cost;if(s.formula){const z=rollFormula(s.formula,ch);C().diceLogs.unshift({id:uid(),time:new Date().toLocaleString('ko-KR'),text:`${ch.name} · ${s.name}: ${z}`})}},`${ch.name} · ${s.name} 사용`)
+}
+function rollFormula(f,ch){
+ const vals=[];let total=0;
+ const replaced=f.replace(/(\d*)d(\d+)/gi,(m,n,s)=>{const a=Array.from({length:Math.max(1,Number(n)||1)},()=>1+Math.floor(Math.random()*Number(s)));a.forEach(x=>total+=x);vals.push(...a);return'['+a.join(',')+']'});
+ let t=replaced;
+ ch.stats.forEach(s=>{const m=mod(s.value);if(new RegExp(s.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(t)){total+=m;t=t.replaceAll(s.name,String(m>=0?'+':'')+m)}});
+ const ns=t.match(/[+-]\s*\d+/g)||[];ns.forEach(n=>total+=Number(n.replace(/\s/g,'')));
+ return `${f} → ${t} = ${total}`
+}
+function rollDice(){
+ const count=Math.max(1,Number(diceCount.value)||1),sides=Math.max(2,Number(diceSides.value)||20),mode=diceMode.value,k=Math.max(1,Math.min(count,Number(diceKeep.value)||1)),v=Array.from({length:count},()=>1+Math.floor(Math.random()*sides));let result,used=v.slice();
+ if(mode==='highest')result=Math.max(...v);else if(mode==='lowest')result=Math.min(...v);else if(mode==='keepHigh'){used=v.slice().sort((a,b)=>b-a).slice(0,k);result=used.reduce((a,b)=>a+b,0)}else if(mode==='keepLow'){used=v.slice().sort((a,b)=>a-b).slice(0,k);result=used.reduce((a,b)=>a+b,0)}else result=v.reduce((a,b)=>a+b,0);
+ pushHistory();C().diceLogs.unshift({id:uid(),time:new Date().toLocaleString('ko-KR'),text:`${count}d${sides} [${v.join(', ')}] → ${result}`});saveDB();document.getElementById('diceResult').textContent=result;document.getElementById('diceBreakdown').textContent=`${count}d${sides} · [${v.join(', ')}]`;renderDiceLog()
+}
+function renderDiceLog(){document.getElementById('diceLog').innerHTML=C().diceLogs.length?C().diceLogs.map(x=>`<div class="item"><b>${esc(x.text)}</b><div class="muted">${esc(x.time)}</div></div>`).join(''):'<div class="empty">기록 없음</div>'}
+diceMode.onchange=()=>keepRow.classList.toggle('hidden',!['keepHigh','keepLow'].includes(diceMode.value));
+
+function openEventEditor(id=''){
+ const e=id?C().events.find(x=>x.id===id):{name:'새 이벤트',condition:'',description:'',completed:false};
+ openModal(`<div class="modalhead"><h2>이벤트 ${id?'편집':'추가'}</h2><button onclick="closeModal()">✕</button></div><label>이름</label><input id="evn" value="${esc(e.name)}"><label style="margin-top:10px">조건</label><input id="evc" value="${esc(e.condition)}" placeholder="예: Lv.20 달성 / 특정 아이템 보유"><label style="margin-top:10px">내용 / 보상</label><textarea id="evd">${esc(e.description)}</textarea><button class="primary" style="margin-top:10px" onclick="saveEvent('${id}')">저장</button>`)
+}
+function saveEvent(id){const v={name:evn.value.trim()||'이벤트',condition:evc.value,description:evd.value};mutate(()=>id?Object.assign(C().events.find(x=>x.id===id),v):C().events.push({id:uid(),...v,completed:false}),'이벤트 저장');closeModal()}
+function renderEvents(){const e=document.getElementById('eventList');e.innerHTML=C().events.length?`<div class="list">${C().events.map(x=>`<div class="item"><div class="row between"><b>${esc(x.name)}</b><span class="pill">${x.completed?'완료':'미완료'}</span></div><div class="muted">조건: ${esc(x.condition)}</div><div style="margin-top:5px">${esc(x.description)}</div><div class="row" style="margin-top:8px"><button class="small ok" onclick="toggleEvent('${x.id}')">${x.completed?'미완료':'완료'}</button><button class="small" onclick="openEventEditor('${x.id}')">편집</button><button class="small danger" onclick="deleteEvent('${x.id}')">삭제</button></div></div>`).join('')}</div>`:'<div class="empty">이벤트 없음</div>'}
+function toggleEvent(id){mutate(()=>C().events.find(x=>x.id===id).completed=!C().events.find(x=>x.id===id).completed,'이벤트 상태 변경')}
+function deleteEvent(id){mutate(()=>C().events=C().events.filter(x=>x.id!==id),'이벤트 삭제')}
+
+function renderSettings(){
+ const r=C().rules;
+ document.getElementById('settingsPage').innerHTML=`<div class="card"><h2>⚙ 캠페인 규칙</h2><div class="grid grid2">
+ <div><label>레벨업 능력치 포인트</label><input id="rpts" type="number" value="${r.statPointsPerLevel}"></div><div><label>능력치 분배</label><select id="ralloc"><option value="manual" ${r.statAllocation==='manual'?'selected':''}>수동</option><option value="random" ${r.statAllocation==='random'?'selected':''}>랜덤</option></select></div>
+ <div><label>초기 HP</label><input id="rhp" type="number" value="${r.hpInitial}"></div><div><label>레벨당 HP 증가</label><input id="rhpp" type="number" value="${r.hpPerLevel}"></div>
+ <div><label>MP 사용</label><select id="rmpen"><option value="true" ${r.mpEnabled?'selected':''}>사용</option><option value="false" ${!r.mpEnabled?'selected':''}>사용 안 함</option></select></div><div><label>초기 MP</label><input id="rmp" type="number" value="${r.mpInitial}"></div><div><label>레벨당 MP 증가</label><input id="rmpp" type="number" value="${r.mpPerLevel}"></div>
+ <div><label>무게 시스템</label><select id="rweight"><option value="true" ${r.weightEnabled?'selected':''}>사용</option><option value="false" ${!r.weightEnabled?'selected':''}>사용 안 함</option></select></div><div><label>소지 한도</label><select id="rcarry"><option value="strength" ${r.carryingCapacityRule==='strength'?'selected':''}>힘 × 5</option><option value="fixed" ${r.carryingCapacityRule==='fixed'?'selected':''}>100 고정</option></select></div>
+ </div><label style="margin-top:10px"><input id="rredis" type="checkbox" ${r.allowRedistribution?'checked':''} style="width:auto"> 능력치 재분배 허용</label><button class="primary" style="margin-top:10px" onclick="saveRules()">규칙 저장</button></div>
+ <div class="card"><h2>💾 백업 / 복원</h2><div class="row"><button onclick="exportJSON()">JSON 내보내기</button><label style="margin:0"><span class="btn">JSON 가져오기</span><input id="importFile" type="file" accept=".json" style="display:none" onchange="importJSON(this.files[0])"></label><button class="danger" onclick="clearAll()">전체 데이터 삭제</button></div></div>`
+}
+function saveRules(){mutate(()=>{const r=C().rules;r.statPointsPerLevel=Number(rpts.value)||0;r.statAllocation=ralloc.value;r.hpInitial=Number(rhp.value)||0;r.hpPerLevel=Number(rhpp.value)||0;r.mpEnabled=rmpen.value==='true';r.mpInitial=Number(rmp.value)||0;r.mpPerLevel=Number(rmpp.value)||0;r.weightEnabled=rweight.value==='true';r.carryingCapacityRule=rcarry.value;r.allowRedistribution=rredis.checked},'규칙 저장')}
+function exportJSON(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});download(blob,'trpg-backup.json')}
+function importJSON(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const x=JSON.parse(fr.result);if(!x.campaigns)throw 0;pushHistory();db=x;currentCampaignId=db.currentCampaignId;saveDB();render();toast('복원 완료')}catch(e){alert('올바른 TRPG JSON이 아닙니다.')}};fr.readAsText(file)}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function clearAll(){if(!confirm('모든 캠페인을 삭제하고 새 상태로 만들까요?'))return;pushHistory();const c=makeCampaign();db={campaigns:[c],currentCampaignId:c.id};selectedCharacterId=null;saveDB();render();toast('전체 초기화 완료')}
+
+function saveCampaignMeta(){mutate(()=>{C().name=document.getElementById('campaignName').value.trim()||'새 캠페인';C().progress=document.getElementById('campaignProgress').value;C().situation=document.getElementById('campaignSituation').value},'진행 정보 저장')}
+function newCampaign(){pushHistory();const c=makeCampaign();db.campaigns.push(c);currentCampaignId=c.id;selectedCharacterId=null;saveDB();render();toast('새 캠페인 생성')}
+function resetCampaign(){if(!confirm('현재 캠페인을 처음부터 다시 시작할까요?'))return;const old=C(),fresh=makeCampaign();fresh.id=old.id;fresh.name=old.name;fresh.createdAt=old.createdAt;pushHistory();db.campaigns=db.campaigns.map(x=>x.id===old.id?fresh:x);selectedCharacterId=null;saveDB();render();toast('처음부터 시작')}
+function campaignManager(){openModal(`<div class="modalhead"><h2>캠페인 관리</h2><button onclick="closeModal()">✕</button></div><div class="list">${db.campaigns.map(c=>`<div class="item"><div class="row between"><b>${esc(c.name)}</b>${c.id===currentCampaignId?'<span class="pill">현재</span>':''}</div><div class="row" style="margin-top:8px"><button class="small primary" onclick="switchCampaign('${c.id}')">열기</button>${db.campaigns.length>1?`<button class="small danger" onclick="deleteCampaign('${c.id}')">삭제</button>`:''}</div></div>`).join('')}</div><button class="primary" style="margin-top:10px" onclick="newCampaign();closeModal()">＋ 새 캠페인</button>`)}
+function switchCampaign(id){pushHistory();currentCampaignId=id;selectedCharacterId=null;saveDB();closeModal();render()}
+function deleteCampaign(id){if(!confirm('이 캠페인을 삭제할까요?'))return;pushHistory();db.campaigns=db.campaigns.filter(c=>c.id!==id);if(currentCampaignId===id)currentCampaignId=db.campaigns[0].id;saveDB();campaignManager();render()}
+
+function renderLogs(){const e=document.getElementById('recentLogs');e.innerHTML=C().logs.length?C().logs.slice(0,30).map(x=>`<div class="item"><b>${esc(x.text)}</b><div class="muted">${esc(x.time)}</div></div>`).join(''):'<div class="empty">로그 없음</div>'}
+function copyText(text,msg){if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast(msg));else prompt('복사할 내용을 선택하세요.',text)}
+function copyAIState(){
+ const c=C();
+ const t=`[TRPG CAMPAIGN]
+제목: ${c.name}
+진행도: ${c.progress||'없음'}
+현재 상황: ${c.situation||'없음'}
+
+[CHARACTERS]
+${c.characters.map(ch=>`- ${ch.name} | ${roleName(ch.role)} | Lv.${ch.level} | EXP ${ch.exp}
+  자원: ${ch.resources.filter(r=>r.enabled!==false).map(r=>`${r.name} ${r.current}/${r.max}`).join(', ')||'없음'}
+  능력치: ${ch.stats.map(s=>`${s.name} ${s.value} (${mod(s.value)>=0?'+':''}${mod(s.value)})`).join(', ')}
+  상태: ${ch.statuses.map(s=>s.name+(s.duration?' ['+s.duration+']':'')).join(', ')||'없음'}
+  장비: ${ch.inventory.filter(i=>i.equipped).map(i=>i.name).join(', ')||'없음'}`).join('\n')}
+
+[RECENT LOGS]
+${c.logs.slice(0,15).map(x=>'- '+x.text).join('\n')||'없음'}
+
+[EVENTS]
+${c.events.map(e=>`- ${e.name}: ${e.completed?'완료':'미완료'} / 조건: ${e.condition}`).join('\n')||'없음'}
+
+[INVENTORY]
+${c.characters.map(ch=>`${ch.name}: ${ch.inventory.map(i=>`${i.name} ×${i.quantity}`).join(', ')||'없음'}`).join('\n')}`;
+ copyText(t,'AI용 상태를 복사했습니다.')
+}
+function copyFullCampaign(){copyText(JSON.stringify(C(),null,2),'현재 캠페인 JSON을 복사했습니다.')}
+
+window.addEventListener('beforeunload',saveDB);
+render();
+</script>
+</body>
+</html>
